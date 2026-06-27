@@ -1,0 +1,4 @@
+.build/
+*.o
+*.d
+tab-switch.app/
