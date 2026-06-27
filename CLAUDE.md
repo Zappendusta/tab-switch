@@ -9,7 +9,7 @@ A macOS-only background agent app (`LSUIElement`, no Dock icon) that replaces th
 - **Cmd+Tab** → switch between windows of **all apps** (replaces the native app switcher).
 - **Option+Tab** → switch between windows of the **current app only**.
 
-Both show a borderless text-list overlay (app icon + window title per row), cycle with Tab / Shift+Tab while the modifier is held, and focus the highlighted window on release. Order is most-recently-used (MRU), so Tab-once returns to the previous window. Personal tool: no code signing, notarization, settings UI, or distribution. The authoritative design is in `docs/superpowers/specs/2026-06-27-tab-switch-design.md`.
+Both show a borderless text-list overlay (app icon + window title per row), cycle with Tab / Shift+Tab while the modifier is held, and focus the highlighted window on release. Order is most-recently-used (MRU), so Tab-once returns to the previous window. Personal tool: no code signing, notarization, or settings UI. Distributed from source via a Homebrew tap (`brew tap Zappendusta/tab-switch && brew install tab-switch`); see `docs/superpowers/specs/2026-06-27-homebrew-distribution-design.md`.
 
 ## Commands
 
