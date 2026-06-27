@@ -27,11 +27,14 @@ It is deliberately minimal — a personal tool, not a product. No settings UI an
 
 ```bash
 brew tap Zappendusta/tab-switch
+brew trust zappendusta/tab-switch
 brew install tab-switch
 brew services start tab-switch
 ```
 
-`brew services start` launches the agent now and auto-starts it at login. Then
+`brew trust` is required because Homebrew 6.0+ refuses to load formulae from
+third-party taps until you trust them. `brew services start` launches the agent
+now and auto-starts it at login. Then
 grant **Accessibility** permission in **System Settings → Privacy & Security →
 Accessibility**.
 

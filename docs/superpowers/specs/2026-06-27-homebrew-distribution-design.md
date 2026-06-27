@@ -39,6 +39,7 @@ Install UX:
 
 ```bash
 brew tap Zappendusta/tab-switch
+brew trust zappendusta/tab-switch  # Homebrew 6.0+ requires trusting third-party taps
 brew install tab-switch
 brew services start tab-switch     # launch now + auto-start at login
 ```
