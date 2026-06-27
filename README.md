@@ -15,23 +15,29 @@ The native macOS `Cmd+Tab` switches between **applications**, not **windows**. I
 
 This tool flips the model: it switches between **windows** directly, regardless of which app owns them. The result is closer to the window-switching behavior on other platforms, with MRU ordering so the most common move (jump to the last window, jump back) is a single keystroke.
 
-It is deliberately minimal — a personal tool, not a product. No settings UI, no code signing, no distribution.
+It is deliberately minimal — a personal tool, not a product. No settings UI and no code signing; it builds from source and installs via Homebrew.
 
 ## Requirements
 
-- macOS
-- Swift toolchain (Xcode or Swift command-line tools)
+- macOS 13 (Ventura) or later
+- Xcode or the Swift command-line tools (Homebrew builds the app from source)
 - **Accessibility permission** — required for both the keyboard event tap and window control.
 
-## Install & run
+## Install
 
 ```bash
-./scripts/make-app.sh && open tab-switch.app
+brew tap Zappendusta/tab-switch
+brew install tab-switch
+brew services start tab-switch
 ```
 
-Then grant **Accessibility** permission to the app in **System Settings → Privacy & Security → Accessibility**.
+`brew services start` launches the agent now and auto-starts it at login. Then
+grant **Accessibility** permission in **System Settings → Privacy & Security →
+Accessibility**.
 
-> A freshly built binary is a new identity to macOS's permission system (TCC) and must be re-granted Accessibility after each rebuild.
+> tab-switch is built from source, so each `brew upgrade` produces a new binary
+> identity. macOS's permission system (TCC) treats that as a new app, so you must
+> re-grant Accessibility after every upgrade.
 
 The app runs as a background agent (`LSUIElement`): no Dock icon, no menu bar item. On launch it checks for Accessibility trust; if missing, it prompts and polls until granted, then starts automatically.
 
@@ -69,4 +75,4 @@ The authoritative design is in [`docs/superpowers/specs/2026-06-27-tab-switch-de
 
 ## License
 
-Personal tool. No license; not intended for distribution.
+MIT — see [`LICENSE`](LICENSE).
