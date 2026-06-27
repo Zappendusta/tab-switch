@@ -21,6 +21,10 @@ final class HotkeyTap {
     private let tabKey: Int64 = 0x30      // Tab
     private let escKey: Int64 = 0x35      // Escape
 
+    /// Tracks whether Shift was already held, so each Shift *press* (not hold)
+    /// steps the switcher backward exactly once.
+    private var shiftWasDown = false
+
     /// Creates and enables the tap. Requires Accessibility trust.
     func start() {
         let mask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
@@ -66,10 +70,13 @@ final class HotkeyTap {
 
             if keyCode == tabKey && (cmd || option) {
                 if delegate.isSessionOpen {
-                    shift ? delegate.hotkeyPrev() : delegate.hotkeyNext()
+                    delegate.hotkeyNext()
                 } else {
                     let scope: Scope = cmd ? .allApps : .activeApp
                     delegate.hotkeyOpen(scope: scope, reverse: shift)
+                    // Seed Shift state so an already-held Shift at open time does
+                    // not immediately count as a fresh press in flagsChanged.
+                    shiftWasDown = shift
                 }
                 return nil  // consume: system switcher never sees Cmd/Opt+Tab
             }
@@ -81,9 +88,17 @@ final class HotkeyTap {
         }
 
         if type == .flagsChanged && delegate.isSessionOpen {
-            // Commit when both Cmd and Option are released.
             if !cmd && !option {
+                // Activation modifier released → commit the selection.
+                shiftWasDown = false
                 delegate.hotkeyCommit()
+            } else if shift && !shiftWasDown {
+                // Fresh Shift press while still holding the activation modifier
+                // → step backward once.
+                delegate.hotkeyPrev()
+                shiftWasDown = true
+            } else {
+                shiftWasDown = shift
             }
         }
 
