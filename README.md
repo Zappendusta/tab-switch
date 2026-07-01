@@ -1,6 +1,9 @@
-# tab-switch
+# tab-switch — a free, open-source macOS window switcher (AltTab alternative)
 
-A macOS background agent that replaces the system window switcher with two keyboard-driven switchers:
+**tab-switch** is a free, open-source macOS window switcher. It replaces the native
+`Cmd+Tab` app switcher with two keyboard-driven switchers that cycle between
+**windows**, not just applications — a lightweight AltTab alternative for switching
+between windows on macOS.
 
 - **Cmd+Tab** → switch between windows of **all apps** (replaces the native app switcher).
 - **Option+Tab** → switch between windows of the **current app only**.
@@ -16,6 +19,12 @@ The native macOS `Cmd+Tab` switches between **applications**, not **windows**. I
 This tool flips the model: it switches between **windows** directly, regardless of which app owns them. The result is closer to the window-switching behavior on other platforms, with MRU ordering so the most common move (jump to the last window, jump back) is a single keystroke.
 
 It is deliberately minimal — a personal tool, not a product. No settings UI and no code signing; it builds from source and installs via Homebrew.
+
+### How it compares
+
+- **vs. the native macOS switcher** — `Cmd+Tab` on macOS switches between *apps*; tab-switch switches between individual *windows*, so you land on the exact window you want instead of an app.
+- **vs. AltTab** — [AltTab](https://alt-tab-macos.netlify.app/) is a full-featured, open-source window switcher with window previews and rich configuration. tab-switch is a much smaller, keyboard-only alternative: a fast MRU text list, no thumbnails, no settings — if you want the leanest possible window switcher, this is it.
+- **Open source and free** — MIT-licensed, builds from source, installs via Homebrew.
 
 ## Requirements
 
@@ -75,6 +84,10 @@ Two SwiftPM targets, split by testability:
 - **TabSwitchApp** — the executable; all AppKit / Accessibility (AX) / CoreGraphics integration lives here.
 
 The authoritative design is in [`docs/superpowers/specs/2026-06-27-tab-switch-design.md`](docs/superpowers/specs/2026-06-27-tab-switch-design.md). For a detailed map of the core types and app wiring, see [`CLAUDE.md`](CLAUDE.md).
+
+## Keywords
+
+macOS window switcher · switch between windows on Mac (not just apps) · free open-source AltTab alternative · Cmd+Tab window switcher · Option+Tab same-app window switcher · MRU window switching · keyboard window manager for macOS · lightweight alt-tab for Mac.
 
 ## License
 
