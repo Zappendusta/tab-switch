@@ -1,3 +1,5 @@
+<sub>Built with AI — code, tests, design spec, and this README were written by Claude (Anthropic's Claude Code).</sub>
+
 # tab-switch — a free, open-source macOS window switcher (AltTab alternative)
 
 **tab-switch** is a free, open-source macOS window switcher. It replaces the native
@@ -9,8 +11,6 @@ between windows on macOS.
 - **Option+Tab** → switch between windows of the **current app only**.
 
 Both show a borderless text-list overlay (app icon + window title per row). Cycle with `Tab` / `Shift+Tab` while the modifier is held; the highlighted window is focused on release. Ordering is most-recently-used (MRU), so a single `Cmd+Tab` returns you to the previous window.
-
-> **Built with AI.** This project — code, tests, design spec, and this README — was written by Claude (Anthropic's Claude Code). It is a personal tool, generated and iterated on through AI-assisted development.
 
 ## Why this exists
 
