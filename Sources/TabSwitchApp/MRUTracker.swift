@@ -19,8 +19,10 @@ final class MRUTracker {
     }
 
     private func handleActivation(_ note: Notification) {
+        // Accessory apps included too: Steam/CEF helpers own real windows
+        // (see AXWindowSource). AX checks below gate out junk.
         guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-              app.activationPolicy == .regular else { return }
+              app.activationPolicy != .prohibited else { return }
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         var focused: CFTypeRef?

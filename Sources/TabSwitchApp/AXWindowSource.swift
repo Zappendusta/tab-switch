@@ -14,8 +14,21 @@ final class AXWindowSource {
 
         let activePID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1
 
+        // Some apps (Steam/CEF) host their real windows in an .accessory helper
+        // process. Include accessory apps only when CGWindowList says they own a
+        // layer-0 window — AX-querying all ~60 accessory apps costs ~800ms.
+        let windowOwnerPIDs: Set<pid_t> = {
+            let info = CGWindowListCopyWindowInfo([.excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+            return Set(info.compactMap { w -> pid_t? in
+                guard (w[kCGWindowLayer as String] as? Int) == 0,
+                      let pid = w[kCGWindowOwnerPID as String] as? Int else { return nil }
+                return pid_t(pid)
+            })
+        }()
+
         let apps = NSWorkspace.shared.runningApplications.filter {
-            $0.activationPolicy == .regular
+            $0.activationPolicy == .regular ||
+            ($0.activationPolicy == .accessory && windowOwnerPIDs.contains($0.processIdentifier))
         }
 
         for app in apps {
