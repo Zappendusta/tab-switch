@@ -63,7 +63,7 @@ The app runs as a background agent (`LSUIElement`): no Dock icon, no menu bar it
 | Release modifier | Focus the highlighted window |
 | `Esc` (modifier held) | Cancel without switching |
 
-A quick `Cmd+Tab` + release just flips to the previous window with no UI flash — the overlay only renders after a short hold or on the second `Tab`.
+A quick `Cmd+Tab` + release flips straight to the previous window; the overlay appears instantly with no show delay.
 
 ## Development
 

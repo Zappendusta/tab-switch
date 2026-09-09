@@ -19,10 +19,23 @@ final class MRUTracker {
     }
 
     private func handleActivation(_ note: Notification) {
+        guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+        record(focusedWindowOf: app)
+    }
+
+    /// Record the frontmost app's focused window. Called at switcher open:
+    /// didActivateApplication fires before a launching app has a window, and
+    /// never fires for Cmd+N / Cmd+` inside the active app, so the MRU can be
+    /// stale exactly when it matters.
+    func recordFrontmost() {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return }
+        record(focusedWindowOf: app)
+    }
+
+    private func record(focusedWindowOf app: NSRunningApplication) {
         // Accessory apps included too: Steam/CEF helpers own real windows
         // (see AXWindowSource). AX checks below gate out junk.
-        guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-              app.activationPolicy != .prohibited else { return }
+        guard app.activationPolicy != .prohibited else { return }
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         var focused: CFTypeRef?

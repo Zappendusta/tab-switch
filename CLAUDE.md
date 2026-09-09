@@ -48,7 +48,7 @@ Two SwiftPM targets, split by testability:
 3. Further Tab → `next`; Shift+Tab → `prev`. **Modifier release** (`flagsChanged` with no Cmd/Option) → `hotkeyCommit` → `Focuser` raises + activates the window.
 4. Esc → cancel.
 
-`MRUTracker` runs independently of sessions: it observes `NSWorkspace.didActivateApplication` and records the newly-focused window into the shared `MRUList`, keeping MRU order current between switches.
+`MRUTracker` runs independently of sessions: it observes `NSWorkspace.didActivateApplication` and records the newly-focused window into the shared `MRUList`, keeping MRU order current between switches. That notification fires before a launching app has a window and never fires for in-app window changes (Cmd+N, Cmd+`), so `hotkeyOpen` also calls `mruTracker.recordFrontmost()` first to pin the actual current window at index 0. Don't remove that call.
 
 ### Key implementation details (easy to break)
 
@@ -56,5 +56,5 @@ Two SwiftPM targets, split by testability:
 - **Accessibility permission gates everything** — both the event tap and AX window control. `Permissions.isTrusted()` wraps `AXIsProcessTrusted()`. A freshly built binary is a new identity to TCC and must be re-granted.
 - **Self-disabling tap recovery** — `HotkeyTap.handle` re-enables itself on `tapDisabledByTimeout` / `tapDisabledByUserInput`. Don't remove this; the OS disables taps that are slow or under heavy input.
 - **Shift = step backward** is detected by a *fresh* Shift press (`shift && !shiftWasDown`) in `flagsChanged`, not by holding Shift. `shiftWasDown` is seeded at open time so an already-held Shift doesn't count as a press.
-- **Flash-avoidance** — the panel renders only after a ~150ms hold (`showDelay`) or immediately on the second Tab (`renderImmediately` cancels the pending work item). A quick Cmd+Tab+release just flips to the previous window with no UI flash. Preserve this when changing show/hide timing.
+- **Panel shows immediately on open** — no show delay. A quick Cmd+Tab+release briefly flashes the panel; this was a deliberate trade for zero latency.
 - **Window filtering** — `AXWindowSource.enumerate` includes only `.regular` apps, standard titled windows (skips sheets/drawers/titleless utility windows), and windows with a resolvable `CGWindowID`. It returns the live `WindowID → AXUIElement` map (`elements`) that `Focuser` needs.

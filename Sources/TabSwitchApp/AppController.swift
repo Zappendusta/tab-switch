@@ -9,8 +9,6 @@ final class AppController: HotkeyTapDelegate {
     private lazy var mruTracker = MRUTracker(mru: mru)
 
     private var state: SwitcherState?
-    private var showWorkItem: DispatchWorkItem?
-    private let showDelay: TimeInterval = 0.15
 
     var isSessionOpen: Bool { state != nil }
 
@@ -22,6 +20,7 @@ final class AppController: HotkeyTapDelegate {
     }
 
     func hotkeyOpen(scope: Scope, reverse: Bool) {
+        mruTracker.recordFrontmost()
         let (all, activePID) = source.enumerate()
         mru.prune(validIDs: all.map(\.id))
         let scoped = scope.filter(all, activePID: activePID)
@@ -31,27 +30,19 @@ final class AppController: HotkeyTapDelegate {
         let state = SwitcherState(windows: ordered)
         if reverse { state.prev() }
         self.state = state
-
-        // Flash-avoidance: only render the panel if the modifier is held a
-        // moment. A quick tap+release commits before this fires.
-        let work = DispatchWorkItem { [weak self] in
-            guard let self, let s = self.state else { return }
-            self.panel.show(windows: s.windows, selectedIndex: s.selectedIndex)
-        }
-        showWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + showDelay, execute: work)
+        render(state)
     }
 
     func hotkeyNext() {
         guard let state else { return }
         state.next()
-        renderImmediately(state)
+        render(state)
     }
 
     func hotkeyPrev() {
         guard let state else { return }
         state.prev()
-        renderImmediately(state)
+        render(state)
     }
 
     func hotkeyCommit() {
@@ -65,14 +56,11 @@ final class AppController: HotkeyTapDelegate {
         endSession()
     }
 
-    private func renderImmediately(_ state: SwitcherState) {
-        showWorkItem?.cancel()  // second Tab → show now, skip the delay
+    private func render(_ state: SwitcherState) {
         panel.show(windows: state.windows, selectedIndex: state.selectedIndex)
     }
 
     private func endSession() {
-        showWorkItem?.cancel()
-        showWorkItem = nil
         panel.hide()
         state = nil
     }
