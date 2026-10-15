@@ -37,7 +37,13 @@ final class HotkeyTap {
             eventsOfInterest: CGEventMask(mask),
             callback: { _, type, event, refcon in
                 let me = Unmanaged<HotkeyTap>.fromOpaque(refcon!).takeUnretainedValue()
-                return me.handle(type: type, event: event)
+                let t0 = CFAbsoluteTimeGetCurrent()  // DEBUG-LAG
+                let queuedMs = Double(clock_gettime_nsec_np(CLOCK_UPTIME_RAW) &- event.timestamp) / 1e6
+                if queuedMs > 20 { lagLog(String(format: "event type=%d waited %.1fms before callback", type.rawValue, queuedMs)) }
+                let r = me.handle(type: type, event: event)
+                let ms = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                if ms > 5 { lagLog(String(format: "tap callback type=%d took %.1fms", type.rawValue, ms)) }  // DEBUG-LAG
+                return r
             },
             userInfo: selfPtr
         ) else {
@@ -55,6 +61,7 @@ final class HotkeyTap {
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // Re-enable if the system disabled us.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            lagLog(String(format: "tap DISABLED type=%d, re-enabling", type.rawValue))  // DEBUG-LAG
             if let tap = tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)
         }

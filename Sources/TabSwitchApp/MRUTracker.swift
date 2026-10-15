@@ -14,7 +14,9 @@ final class MRUTracker {
             object: nil,
             queue: .main
         ) { [weak self] note in
+            let t = CFAbsoluteTimeGetCurrent()  // DEBUG-LAG
             self?.handleActivation(note)
+            lagLog(String(format: "didActivate record %.1fms", (CFAbsoluteTimeGetCurrent() - t) * 1000))  // DEBUG-LAG
         }
     }
 

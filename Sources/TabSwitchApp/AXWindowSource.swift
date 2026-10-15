@@ -32,6 +32,8 @@ final class AXWindowSource {
         }
 
         for app in apps {
+            let tApp = CFAbsoluteTimeGetCurrent()  // DEBUG-LAG
+            defer { let ms = (CFAbsoluteTimeGetCurrent() - tApp) * 1000; if ms > 10 { lagLog(String(format: "  app %@ %.1fms", app.localizedName ?? "?", ms)) } }
             let pid = app.processIdentifier
             let appElement = AXUIElementCreateApplication(pid)
 
