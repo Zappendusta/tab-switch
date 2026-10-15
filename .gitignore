@@ -2,3 +2,4 @@
 *.o
 *.d
 tab-switch.app/
+.DS_Store
