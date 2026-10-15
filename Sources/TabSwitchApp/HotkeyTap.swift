@@ -8,8 +8,6 @@ protocol HotkeyTapDelegate: AnyObject {
     func hotkeyPrev()
     func hotkeyCancel()
     func hotkeyCommit()
-    /// Whether a switch session is currently open (drives commit on release).
-    var isSessionOpen: Bool { get }
 }
 
 final class HotkeyTap {
@@ -24,6 +22,15 @@ final class HotkeyTap {
     /// Tracks whether Shift was already held, so each Shift *press* (not hold)
     /// steps the switcher backward exactly once.
     private var shiftWasDown = false
+
+    /// Session state owned by the tap thread, so the callback never waits on the main thread.
+    private var sessionOpen = false
+
+    /// Modifiers never auto-repeat, so holding Shift repeats `hotkeyPrev` with a
+    /// timer on the tap thread's run loop, at the system key-repeat delay/rate.
+    private var shiftRepeat: Timer?
+    private let repeatDelay = NSEvent.keyRepeatDelay
+    private let repeatInterval = NSEvent.keyRepeatInterval
 
     /// Creates and enables the tap. Requires Accessibility trust.
     func start() {
@@ -54,8 +61,39 @@ final class HotkeyTap {
         self.tap = tap
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         self.runLoopSource = source
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        // Own thread: a slow main thread (AX enumerate, panel drawing) must not
+        // hold the tap callback, which blocks all keyboard input system-wide.
+        let thread = Thread {
+            CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
+            CGEvent.tapEnable(tap: tap, enable: true)
+            CFRunLoopRun()
+        }
+        thread.name = "tab-switch.hotkey-tap"
+        thread.qualityOfService = .userInteractive
+        thread.start()
+    }
+
+    private func startShiftRepeat() {
+        shiftRepeat?.invalidate()
+        shiftRepeat = Timer.scheduledTimer(withTimeInterval: repeatDelay, repeats: false) { [weak self] _ in
+            guard let self, self.sessionOpen else { return }
+            self.shiftRepeat = Timer.scheduledTimer(withTimeInterval: self.repeatInterval, repeats: true) { [weak self] _ in
+                guard let self, self.sessionOpen else { self?.stopShiftRepeat(); return }
+                self.send { $0.hotkeyPrev() }
+            }
+        }
+    }
+
+    private func stopShiftRepeat() {
+        shiftRepeat?.invalidate()
+        shiftRepeat = nil
+    }
+
+    /// Delegate work runs on the main thread; the serial main queue keeps event order.
+    private func send(_ call: @escaping (HotkeyTapDelegate) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            if let delegate = self?.delegate { call(delegate) }
+        }
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -66,7 +104,6 @@ final class HotkeyTap {
             return Unmanaged.passUnretained(event)
         }
 
-        guard let delegate = delegate else { return Unmanaged.passUnretained(event) }
         let flags = event.flags
         let cmd = flags.contains(.maskCommand)
         let option = flags.contains(.maskAlternate)
@@ -76,11 +113,16 @@ final class HotkeyTap {
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
 
             if keyCode == tabKey && (cmd || option) {
-                if delegate.isSessionOpen {
-                    delegate.hotkeyNext()
+                if sessionOpen {
+                    send { $0.hotkeyNext() }
                 } else {
                     let scope: Scope = cmd ? .allApps : .activeApp
-                    delegate.hotkeyOpen(scope: scope, reverse: shift)
+                    sessionOpen = true
+                    let queued = CFAbsoluteTimeGetCurrent()  // DEBUG-LAG
+                    send {
+                        lagLog(String(format: "open waited %.1fms for main thread", (CFAbsoluteTimeGetCurrent() - queued) * 1000))  // DEBUG-LAG
+                        $0.hotkeyOpen(scope: scope, reverse: shift)
+                    }
                     // Seed Shift state so an already-held Shift at open time does
                     // not immediately count as a fresh press in flagsChanged.
                     shiftWasDown = shift
@@ -88,23 +130,29 @@ final class HotkeyTap {
                 return nil  // consume: system switcher never sees Cmd/Opt+Tab
             }
 
-            if keyCode == escKey && delegate.isSessionOpen {
-                delegate.hotkeyCancel()
+            if keyCode == escKey && sessionOpen {
+                sessionOpen = false
+                stopShiftRepeat()
+                send { $0.hotkeyCancel() }
                 return nil
             }
         }
 
-        if type == .flagsChanged && delegate.isSessionOpen {
+        if type == .flagsChanged && sessionOpen {
             if !cmd && !option {
                 // Activation modifier released → commit the selection.
                 shiftWasDown = false
-                delegate.hotkeyCommit()
+                sessionOpen = false
+                stopShiftRepeat()
+                send { $0.hotkeyCommit() }
             } else if shift && !shiftWasDown {
                 // Fresh Shift press while still holding the activation modifier
                 // → step backward once.
-                delegate.hotkeyPrev()
+                send { $0.hotkeyPrev() }
                 shiftWasDown = true
+                startShiftRepeat()
             } else {
+                if !shift { stopShiftRepeat() }
                 shiftWasDown = shift
             }
         }

@@ -14,6 +14,12 @@ public final class SwitcherState {
         return windows[selectedIndex]
     }
 
+    /// Select the window with `id`, if present. Keeps the selection stable when
+    /// the window list is refreshed mid-session.
+    public func select(_ id: WindowID) {
+        if let i = windows.firstIndex(where: { $0.id == id }) { selectedIndex = i }
+    }
+
     public func next() {
         guard !windows.isEmpty else { return }
         selectedIndex = (selectedIndex + 1) % windows.count

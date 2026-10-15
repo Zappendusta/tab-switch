@@ -18,6 +18,14 @@ final class SwitcherStateTests: XCTestCase {
         XCTAssertEqual(state.selected?.id.raw, "a")
     }
 
+    func testSelectByID() {
+        let state = SwitcherState(windows: wins(["a", "b", "c"]))
+        state.select(WindowID("c"))
+        XCTAssertEqual(state.selected?.id.raw, "c")
+        state.select(WindowID("missing"))  // unknown id keeps selection
+        XCTAssertEqual(state.selected?.id.raw, "c")
+    }
+
     func testEmptyHasNoSelection() {
         let state = SwitcherState(windows: wins([]))
         XCTAssertNil(state.selected)
