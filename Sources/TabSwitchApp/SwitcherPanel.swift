@@ -21,7 +21,7 @@ final class SwitcherPanel {
     /// Show the panel for `windows` with `selectedIndex` highlighted.
     /// Safe to call repeatedly to update the highlight.
     func show(windows: [WindowInfo], selectedIndex: Int) {
-        let screens = NSScreen.screens
+        let screens = Self.targetScreens()
         if windows != shownWindows || rows.count != screens.count {
             update(windows: windows, screens: screens)
         }
@@ -91,6 +91,13 @@ final class SwitcherPanel {
         let icon = NSRunningApplication(processIdentifier: window.pid)?.icon
         iconCache[window.pid] = icon  // shortcut: never evicted; pids of quit apps linger, fine for a personal tool
         return icon
+    }
+
+    /// Every screen by default. `defaults write local.tabswitch allScreens -bool false`
+    /// limits it to the active screen (read on each show, no restart needed).
+    private static func targetScreens() -> [NSScreen] {
+        if UserDefaults.standard.object(forKey: "allScreens") as? Bool ?? true { return NSScreen.screens }
+        return NSScreen.main.map { [$0] } ?? Array(NSScreen.screens.prefix(1))
     }
 
     private static func text(_ w: WindowInfo) -> String { "\(w.appName) — \(w.title)" }
